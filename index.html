@@ -278,7 +278,10 @@
       <div class="card">
         <div class="card-header">
           <span class="card-title">Questions</span>
-          <button class="btn btn-outline btn-sm" onclick="addQuestion()">+ Add Question</button>
+          <span style="display:flex;gap:8px;">
+            <button class="btn btn-outline btn-sm" onclick="clearQuestions()">Clear</button>
+            <button class="btn btn-outline btn-sm" onclick="addQuestion()">+ Add Question</button>
+          </span>
         </div>
         <div id="questionsContainer"></div>
       </div>
@@ -401,6 +404,11 @@ function updateQuestionType(i, newType) {
 
 function addQuestion() {
   questions.push({ name: 'q' + (questions.length+1), type: 'choice', instructions: '', criteria: {} });
+  renderQuestions();
+}
+
+function clearQuestions() {
+  questions = [];
   renderQuestions();
 }
 
