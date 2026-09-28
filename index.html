@@ -461,8 +461,16 @@ function removeScoreLabel(qi, si) {
 }
 
 // ---- Build payload ----
+// Parse the state field: if it's valid JSON (object/array/etc.) keep it as a structured value,
+// otherwise treat it as a plain string.
+function parseState(raw) {
+  const trimmed = raw.trim();
+  if (!trimmed) return '';
+  try { return JSON.parse(trimmed); } catch (e) { return raw; }
+}
+
 function buildPayload() {
-  const state = document.getElementById('state').value;
+  const state = parseState(document.getElementById('state').value);
   const model = document.getElementById('model').value;
   const qs = {};
   questions.forEach(q => {
@@ -503,7 +511,12 @@ function applyImport(result) {
 
   if (url) document.getElementById('apiUri').value = url;
   if (typeof json.model === 'string') document.getElementById('model').value = json.model;
-  if (typeof json.state === 'string') document.getElementById('state').value = json.state;
+  if (json.state !== undefined) {
+    const stateEl = document.getElementById('state');
+    stateEl.value = (typeof json.state === 'string')
+      ? json.state
+      : JSON.stringify(json.state, null, 2);
+  }
 
   if (json.questions && typeof json.questions === 'object') {
     questions = Object.entries(json.questions).map(([name, q]) => {
@@ -551,11 +564,8 @@ function parseCurl(cmd) {
     const dbl = trimmed.match(/-d\s+"([\s\S]*)"$/);
     if (dbl) { try { json = JSON.parse(dbl[1]); } catch (e) { json = null; } }
     if (!json) {
-      for (const flag of ['--data-raw', '--data']) {
-        const m = trimmed.match(flag + "\s+'([\s\S]*)'$");
-        if (m) { const raw = m[1].split("'\\''").join("'"); try { json = JSON.parse(raw); } catch (e) { json = null; } }
-        if (json) break;
-      }
+      const d = trimmed.match(/--data-raw\s+'([\s\S]*)'$/) || trimmed.match(/--data\s+'([\s\S]*)'$/);
+      if (d) { const raw = d[1].split("'\\''").join("'"); try { json = JSON.parse(raw); } catch (e) { json = null; } }
     }
   }
 
