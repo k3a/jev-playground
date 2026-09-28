@@ -412,8 +412,15 @@ function updateQuestionType(i, newType) {
 }
 
 function addQuestion() {
-  questions.push({ name: 'q' + (questions.length+1), type: 'choice', instructions: '', criteria: {} });
+  questions.push({ name: '', type: 'choice', instructions: '', criteria: {} });
   renderQuestions();
+  // Focus the name field of the newly added question
+  const container = document.getElementById('questionsContainer');
+  const nameInputs = container.querySelectorAll('.question-header input[type="text"]');
+  if (nameInputs.length > 0) {
+    nameInputs[nameInputs.length - 1].focus();
+    nameInputs[nameInputs.length - 1].select();
+  }
 }
 
 function clearQuestions() {
