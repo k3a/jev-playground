@@ -272,7 +272,14 @@
 
       <!-- State -->
       <div class="card">
-        <div class="card-header"><span class="card-title">State</span></div>
+        <div class="card-header">
+          <span class="card-title">State</span>
+          <span style="display:flex;gap:8px;">
+            <button class="btn btn-outline btn-sm" onclick="clearState()">Clear</button>
+            <button class="btn btn-outline btn-sm" onclick="selectImage()">🖼 Image</button>
+            <input type="file" id="imageInput" accept="image/png,image/jpeg" style="display:none" onchange="handleImage(event)">
+          </span>
+        </div>
         <textarea id="state" placeholder="Enter the state text...">Hi, this is the third time I am writing. Our payouts have failed every day since Monday and my team cannot pay suppliers. I already re-entered the bank details twice. If this is not fixed today we will have to move to another provider.</textarea>
       </div>
 
@@ -717,6 +724,34 @@ function renderAnswerCard(name, ans) {
       ${valueHtml}
       ${extras}
     </div>`;
+}
+
+// ---- State helpers ----
+function clearState() {
+  document.getElementById('state').value = '';
+  updateCurl();
+}
+
+function selectImage() {
+  document.getElementById('imageInput').click();
+}
+
+function handleImage(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const base64 = e.target.result; // data:image/...;base64,...
+    const stateObj = {
+      type: 'image_url',
+      image_url: { url: base64 }
+    };
+    document.getElementById('state').value = JSON.stringify(stateObj, null, 2);
+    updateCurl();
+    // Reset file input so selecting the same file again triggers change
+    event.target.value = '';
+  };
+  reader.readAsDataURL(file);
 }
 
 // ---- Init ----
