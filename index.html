@@ -295,12 +295,9 @@
       <div class="card">
         <div class="card-header">
           <span class="card-title">cURL</span>
-          <span style="display:flex;gap:8px;">
-            <button class="btn btn-outline btn-sm" id="importCurlBtn" onclick="importCurl()">⬇ Import</button>
-            <button class="btn btn-outline btn-sm" id="copyCurlBtn" onclick="copyCurl()">📋 Copy</button>
-          </span>
+          <button class="btn btn-outline btn-sm" id="copyCurlBtn" onclick="copyCurl()">📋 Copy</button>
         </div>
-        <textarea class="curl-box" id="curlBox" spellcheck="false" placeholder="Paste a cURL command here and click Import to load it, or edit the generated one..."></textarea>
+        <textarea class="curl-box" id="curlBox" spellcheck="false" placeholder="Paste a cURL command here to load it, or edit the generated one... (changes are applied automatically)"></textarea>
       </div>
 
       <!-- Response -->
@@ -499,14 +496,9 @@ function copyCurl() {
 }
 
 // ---- Import cURL ----
-function importCurl() {
-  const box = document.getElementById('curlBox');
-  const cmd = box.value.trim();
-  if (!cmd) { flashCurlBox(false); return; }
+let curlImportDebounce = null;
 
-  const result = parseCurl(cmd);
-  if (!result || !result.json) { flashCurlBox(false); return; }
-
+function applyImport(result) {
   const { url, json } = result;
 
   if (url) document.getElementById('apiUri').value = url;
@@ -524,6 +516,20 @@ function importCurl() {
 
   renderQuestions(); // re-renders questions + regenerates cURL
   flashCurlBox(true);
+}
+
+// Attempt to parse whatever is currently in the curl box and apply it.
+function tryImportFromBox(withErrorFeedback) {
+  const box = document.getElementById('curlBox');
+  const cmd = box.value.trim();
+  if (!cmd) return;
+
+  const result = parseCurl(cmd);
+  if (!result || !result.json) {
+    if (withErrorFeedback) flashCurlBox(false);
+    return;
+  }
+  applyImport(result);
 }
 
 function parseCurl(cmd) {
@@ -707,6 +713,18 @@ function renderAnswerCard(name, ans) {
 document.getElementById('apiUri').addEventListener('input', updateCurl);
 document.getElementById('model').addEventListener('input', updateCurl);
 document.getElementById('state').addEventListener('input', updateCurl);
+
+// Live import when the curl box is pasted into or edited.
+const curlBox = document.getElementById('curlBox');
+curlBox.addEventListener('paste', () => {
+  // wait for the pasted value to land, then parse with error feedback
+  setTimeout(() => tryImportFromBox(true), 0);
+});
+curlBox.addEventListener('input', () => {
+  clearTimeout(curlImportDebounce);
+  curlImportDebounce = setTimeout(() => tryImportFromBox(false), 400);
+});
+
 renderQuestions();
 </script>
 </body>
