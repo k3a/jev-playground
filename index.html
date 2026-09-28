@@ -35,7 +35,30 @@
     line-height: 1.5;
   }
 
-  .app { max-width: 1100px; margin: 0 auto; padding: 32px 24px 80px; }
+  .app { max-width: 1500px; margin: 0 auto; padding: 32px 24px 80px; }
+
+  /* Two-column layout */
+  .layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 24px;
+    align-items: start;
+  }
+  .col-left, .col-right { min-width: 0; }
+  .col-right {
+    position: sticky;
+    top: 24px;
+    max-height: calc(100vh - 48px);
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+  .col-right::-webkit-scrollbar { width: 8px; }
+  .col-right::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; }
+    .col-right { position: static; max-height: none; overflow: visible; }
+  }
 
   /* Header */
   .header {
@@ -228,53 +251,56 @@
     <span class="badge">API tester</span>
   </div>
 
-  <!-- API Endpoint -->
-  <div class="card">
-    <div class="card-header"><span class="card-title">API Endpoint</span></div>
-    <div class="uri-row">
-      <input type="text" id="apiUri" value="http://localhost:8000/v1/systemone" placeholder="API URI">
-      <input type="text" id="model" value="jev-latest" placeholder="Model" style="width:160px;flex:none;">
+  <div class="layout">
+    <div class="col-left">
+
+      <!-- API Endpoint -->
+      <div class="card">
+        <div class="card-header"><span class="card-title">API Endpoint</span></div>
+        <div class="uri-row">
+          <input type="text" id="apiUri" value="http://localhost:8000/v1/systemone" placeholder="API URI">
+          <input type="text" id="model" value="jev-latest" placeholder="Model" style="width:160px;flex:none;">
+          <button class="btn btn-primary" id="sendBtn" onclick="sendRequest()" title="Send Request">▶</button>
+          <span id="timing" style="display:none;align-items:center;gap:8px;font-size:13px;color:var(--text2);white-space:nowrap;">
+            <span class="spinner" id="spinner"></span>
+            <span id="timingText"></span>
+          </span>
+        </div>
+      </div>
+
+      <!-- State -->
+      <div class="card">
+        <div class="card-header"><span class="card-title">State</span></div>
+        <textarea id="state" placeholder="Enter the state text...">Hi, this is the third time I am writing. Our payouts have failed every day since Monday and my team cannot pay suppliers. I already re-entered the bank details twice. If this is not fixed today we will have to move to another provider.</textarea>
+      </div>
+
+      <!-- Questions -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Questions</span>
+          <button class="btn btn-outline btn-sm" onclick="addQuestion()">+ Add Question</button>
+        </div>
+        <div id="questionsContainer"></div>
+      </div>
+
     </div>
-  </div>
+    <div class="col-right">
 
-  <!-- State -->
-  <div class="card">
-    <div class="card-header"><span class="card-title">State</span></div>
-    <textarea id="state" placeholder="Enter the state text...">Hi, this is the third time I am writing. Our payouts have failed every day since Monday and my team cannot pay suppliers. I already re-entered the bank details twice. If this is not fixed today we will have to move to another provider.</textarea>
-  </div>
+      <!-- CURL -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Generated cURL</span>
+          <button class="btn btn-outline btn-sm" id="copyCurlBtn" onclick="copyCurl()">📋 Copy</button>
+        </div>
+        <div class="curl-box" id="curlBox"></div>
+      </div>
 
-  <!-- Questions -->
-  <div class="card">
-    <div class="card-header">
-      <span class="card-title">Questions</span>
-      <button class="btn btn-outline btn-sm" onclick="addQuestion()">+ Add Question</button>
+      <!-- Response -->
+      <div id="responseArea">
+        <div class="empty-state">Send a request to see the response here.</div>
+      </div>
+
     </div>
-    <div id="questionsContainer"></div>
-  </div>
-
-  <!-- CURL -->
-  <div class="card">
-    <div class="card-header">
-      <span class="card-title">Generated cURL</span>
-      <button class="btn btn-outline btn-sm" id="copyCurlBtn" onclick="copyCurl()">📋 Copy</button>
-    </div>
-    <div class="curl-box" id="curlBox"></div>
-  </div>
-
-  <!-- Actions -->
-  <div style="display:flex;gap:12px;margin-bottom:20px;">
-    <button class="btn btn-primary" id="sendBtn" onclick="sendRequest()">
-      ▶ Send Request
-    </button>
-    <span id="timing" style="display:none;align-items:center;gap:8px;font-size:13px;color:var(--text2);">
-      <span class="spinner" id="spinner"></span>
-      <span id="timingText"></span>
-    </span>
-  </div>
-
-  <!-- Response -->
-  <div id="responseArea">
-    <div class="empty-state">Send a request to see the response here.</div>
   </div>
 
 </div>
