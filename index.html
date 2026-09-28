@@ -158,15 +158,17 @@
 
   /* CURL box */
   .curl-box {
-    position: relative; background: #0d0f15; border: 1px solid var(--border);
-    border-radius: var(--radius-sm); padding: 14px 44px 14px 16px;
+    width: 100%; background: #0d0f15; border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 14px 16px;
     font-family: var(--mono); font-size: 12px; line-height: 1.6;
-    color: #c9d1d9; overflow-x: auto; white-space: pre-wrap; word-break: break-all;
-    max-height: 120px; overflow-y: auto;
+    color: #c9d1d9; resize: vertical; min-height: 120px;
+    white-space: pre-wrap; word-break: break-all;
   }
-  .curl-box .copy-btn {
-    position: absolute; top: 8px; right: 8px;
+  .curl-box:focus {
+    outline: none; border-color: var(--accent);
   }
+  .curl-box.error { border-color: var(--red); }
+  .curl-box.success { border-color: var(--green); }
 
      /* Response */
   .response-meta {
@@ -292,10 +294,13 @@
       <!-- CURL -->
       <div class="card">
         <div class="card-header">
-          <span class="card-title">Generated cURL</span>
-          <button class="btn btn-outline btn-sm" id="copyCurlBtn" onclick="copyCurl()">📋 Copy</button>
+          <span class="card-title">cURL</span>
+          <span style="display:flex;gap:8px;">
+            <button class="btn btn-outline btn-sm" id="importCurlBtn" onclick="importCurl()">⬇ Import</button>
+            <button class="btn btn-outline btn-sm" id="copyCurlBtn" onclick="copyCurl()">📋 Copy</button>
+          </span>
         </div>
-        <div class="curl-box" id="curlBox"></div>
+        <textarea class="curl-box" id="curlBox" spellcheck="false" placeholder="Paste a cURL command here and click Import to load it, or edit the generated one..."></textarea>
       </div>
 
       <!-- Response -->
@@ -481,7 +486,7 @@ function buildCurl() {
 }
 
 function updateCurl() {
-  document.getElementById('curlBox').textContent = buildCurl();
+  document.getElementById('curlBox').value = buildCurl();
 }
 
 function copyCurl() {
@@ -491,6 +496,72 @@ function copyCurl() {
     btn.classList.add('copied');
     setTimeout(() => { btn.textContent = '📋 Copy'; btn.classList.remove('copied'); }, 2000);
   });
+}
+
+// ---- Import cURL ----
+function importCurl() {
+  const box = document.getElementById('curlBox');
+  const cmd = box.value.trim();
+  if (!cmd) { flashCurlBox(false); return; }
+
+  const result = parseCurl(cmd);
+  if (!result || !result.json) { flashCurlBox(false); return; }
+
+  const { url, json } = result;
+
+  if (url) document.getElementById('apiUri').value = url;
+  if (typeof json.model === 'string') document.getElementById('model').value = json.model;
+  if (typeof json.state === 'string') document.getElementById('state').value = json.state;
+
+  if (json.questions && typeof json.questions === 'object') {
+    questions = Object.entries(json.questions).map(([name, q]) => {
+      const obj = { name, type: q.type, instructions: q.instructions || '' };
+      if (q.type === 'choice') obj.criteria = q.criteria || {};
+      else if (q.type === 'score') obj.criteria = Array.isArray(q.criteria) ? q.criteria : [];
+      return obj;
+    });
+  }
+
+  renderQuestions(); // re-renders questions + regenerates cURL
+  flashCurlBox(true);
+}
+
+function parseCurl(cmd) {
+  const trimmed = cmd.trim();
+
+  // Extract URL (first non-space token after 'curl')
+  let url = '';
+  const urlMatch = trimmed.match(/curl\s+['"]?([^\s'"]+)['"]?/);
+  if (urlMatch) url = urlMatch[1];
+
+  // Extract JSON payload from -d '...' or --data '...'
+  let json = null;
+  const single = trimmed.match(/-d\s+'([\s\S]*)'$/);
+  if (single) {
+    const raw = single[1].split("'\\''").join("'");
+    try { json = JSON.parse(raw); } catch (e) { json = null; }
+  }
+  if (!json) {
+    const dbl = trimmed.match(/-d\s+"([\s\S]*)"$/);
+    if (dbl) { try { json = JSON.parse(dbl[1]); } catch (e) { json = null; } }
+    if (!json) {
+      for (const flag of ['--data-raw', '--data']) {
+        const m = trimmed.match(flag + "\s+'([\s\S]*)'$");
+        if (m) { const raw = m[1].split("'\\''").join("'"); try { json = JSON.parse(raw); } catch (e) { json = null; } }
+        if (json) break;
+      }
+    }
+  }
+
+  if (!url && !json) return null;
+  return { url, json };
+}
+
+function flashCurlBox(ok) {
+  const box = document.getElementById('curlBox');
+  box.classList.remove('error', 'success');
+  box.classList.add(ok ? 'success' : 'error');
+  setTimeout(() => box.classList.remove('error', 'success'), 1500);
 }
 
 // ---- Send request ----
